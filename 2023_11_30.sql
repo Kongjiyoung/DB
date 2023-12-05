@@ -38,7 +38,7 @@ INSERT INTO student VALUES
 ('20141007', '진현무', '컴퓨터정보', '2', 'A', 'M', 174, 64),
 ('20131001', '김종헌', '컴퓨터정보', '3', 'C', 'M', NULL, 72),
 ('20131025', '옥성우', '컴퓨터정보', '3', 'A', 'F', 172, 63);
-
+SELECT*FROM student;
 
 #DISTINCT 중복된 행을 제외시킴
 SELECT distinct stu_dept FROM student;
@@ -192,3 +192,161 @@ SELECT*FROM information_schema.table_constraints WHERE TABLE_NAME = 'test';
 ALTER TABLE test01.test DROP FOREIGN KEY test_ibfk_1;
 
 DESC test;
+
+CREATE TABLE tbl_oder(
+	orderNo INT AUTO_INCREMENT UNIQUE,
+	mno INT,
+	pname VARCHAR(100),
+	ea INT,
+	price INT,
+	PRIMARY KEY(orderNo, mno, panme)
+);
+
+
+SET @myVal1 = 160;
+SET @myVal2 = 170;
+
+#prepare : 미완성쿼리 (실행전에 미리 쿼리문에 저장하는 거)
+PREPARE myQuery
+	FROM 'SELECT * FROM student WHERE stu_height BETWEEN ? AND ?';
+
+
+EXECUTE myQuery USING @myVal1, @myVal2;
+
+#limit : 3명만 보고 싶다
+SELECT*FROM student ORDER BY stu_height DESC LIMIT 3;
+
+#limit 1,3 : 시작하는 행 첫번째, 보여줄 행 갯수
+SELECT*FROM student LIMIT 1,3;
+
+#제어흐름함수
+#if(조건문, 참일떄 결과값, 거짓일때 결과값) AS 컬럼명이름붙이기;
+#매개변수, 인수 함수준비자료에 대한 얘기
+SELECT if(100>200, 'True', 'False') AS tf;
+
+#IFNULL(인수(쿼리), 결과값) 
+#인수가 null일때 결과값이 반환 null이 아니면 인수값출력
+SELECT IFNULL(NULL, '널이군요');
+
+#NULLIF(첫번째인수, 두번째인수); 
+#두 인수가 값이 같으면 null반환 다르면 첫번째인수 반환
+SELECT NULLIF(50, 10);
+
+#case 인수 when 조건 then 결과값 else 조건에 해당되지 않는거
+SELECT case 10
+		 when 1 then '일'
+		 when 5 then '오'
+		 when 10 then '삼'
+		 ELSE '모름'
+END;
+
+#문자열
+SELECT ASCII('A');
+SELECT ASCII('B');
+
+SELECT CHAR(65);
+
+SELECT BIT_LENGTH('abc'); #할당된 bit 수 : 24개
+SELECT CHAR_LENGTH('abc'); #글자 수 : 3개
+SELECT LENGTH('abc'); #할당된 byte 수 : 3byte/ 1글자 1바이트
+
+#한글과 영문은 사이즈가 다르다.
+SELECT BIT_LENGTH('가');
+SELECT CHAR_LENGTH('가');
+SELECT LENGTH('가');
+
+#문자열을 이어서 한문장으로 만들어준다.
+SELECT CONCAT('abc', '가', 'def', '나');
+
+#문자열 사이에 이어줄 문자를 넣어준다
+SELECT CONCAT_WS('-', '010', '1111', '2222');
+SELECT CONCAT_WS('/', '2013', '12', '05');
+
+#인자에 해당되는 순서의 문자를 출력한다
+SELECT ELT(2, 'a', 'b', 'c');
+
+#인자에 해당되는 순서를 출력한다
+SELECT FIELD('b', 'a', 'b', 'c');
+
+#인자가 있는지 판별하여 1,0을 출력해준다.
+SELECT FIND_IN_SET('a', 'a,b,c');
+
+#인자가 있는 위치를 반환한다(없으면 0)
+SELECT LOCATE('나', '하나둘셋');
+
+#LOCATE 기능은 같지만 인자 받는 위치가 다름
+SELECT INSTR('하나둘셋', '셋');
+
+#소수점자리 몇번째까지 출력하는지  인자를 받음, 콤마도 넣을 수 있음
+SELECT FORMAT(123456.123456, 3);
+
+#십진수를 이진수로 바꿔줌
+SELECT BIN(8);
+SELECT BIN(4);
+SELECT BIN(2);
+SELECT BIN(1);
+
+#8진수
+SELECT OCT(9);
+SELECT OCT(8);
+SELECT OCT(7);
+SELECT OCT(6);
+
+#16진수
+SELECT HEX(17); #11
+SELECT HEX(16); #10
+SELECT HEX(15); #F
+SELECT HEX(14); #E
+SELECT HEX(13); #D
+SELECT HEX(12); #C
+SELECT HEX(11); #B
+SELECT HEX(10); #A
+SELECT HEX(9); #9
+SELECT HEX(8); #8
+
+#5번째자리부터 시작해 1를 없애고 @넣기
+#insert('삽입할 글자입력', 시작할 숫자, 얼마나 없앨건지, 넣을 문자)
+SELECT INSERT('abcdefghi', 5, 1, '@@@@');
+
+#왼쪽에서부터 3번째글자까지출력
+SELECT LEFT('abcdefg', 3);
+#오른쪽에서부터 3번째글자까지 출력
+SELECT RIGHT('abcdefg', 3);
+#중간글자 가져오기
+SELECT  RIGHT(LEFT('abcdefg', 5), 2);
+#시작할 글자 자릿수, 원하는 글자갯수
+SELECT MID('abcdefg', 4, 2);
+SELECT SUBSTRING('abcdefg', 4, 2);
+SELECT SUBSTRING('abcdefg', FROM 4 FOR 2);
+SELECT SUBSTR('abcdefg', 4, 2);
+
+#SPACE(숫자) 공백을 임의로 넣어줄 수 있다.
+SELECT CONCAT('이것이', SPACE(100), 'MariaDB다');
+
+#앞뒤 순서를 바꾼다
+SELECT REVERSE('abcde');
+
+#REPLACE : 해당하는 글자를 바꾼다
+#REPLACE(글자,해당글자,바꿀글자)
+SELECT REPLACE('이것이 MariaDB다', '이것이', 'This is');
+
+
+#왼쪽공백제거
+SELECT  LTRIM('   abc');
+#오른쪽공백제거
+SELECT RTRIM('abc        ');
+#공백제거
+SELECT TRIM('     abc     ');
+
+#글자반복
+#repeat(문자, 반복횟수)
+SELECT repeat('abc', 3);
+
+
+
+
+
+
+
+
+
