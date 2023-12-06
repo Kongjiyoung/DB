@@ -344,9 +344,132 @@ SELECT repeat('abc', 3);
 
 
 
+CREATE TABLE userTBL(
+	userID CHAR(8) PRIMARY KEY,
+	NAME VARCHAR(10),
+	birthYear INT CHECK(birthYear>=1900 AND birthYear<=2023),
+	email VARCHAR(50) UNIQUE,
+	addr CHAR(2) NOT NULL DEFAULT '서울',
+	CONSTRAINT ck_name CHECK(NAME IS NOT NULL)
+);
+
+#constraint 제약조건을 걸어줌
+CREATE TABLE buyTBL(
+	num INT AUTO_INCREMENT PRIMARY KEY,
+	userID CHAR(8) NOT NULL,
+	prodName CHAR(6) NOT NULL,
+	CONSTRAINT Fk_userTBL_buyTBL FOREIGN KEY(userID) REFERENCES userTBL(userID)
+);
+
+#수정 해주기
+
+
+#스토이드 함수 (Stored Function)
+#1. 스토이드 함수의 파라미터는 모두 입력 파라미터(매개변수)로 사용한다.
+#2. 스토이드 함수는 RETURNS문으로 반환할 값의 데이터형식을 지정한다.
+#3. 본문 안에서는 RETURN문으로 하나의 값을 반환해야 한다.
+#4. 스토이드 함수를 호출할 때는 SELECT 문장으로 호출한다.
+
+DROP FUNCTION if EXISTS userFunc; #userFunc이 있으면 없애라
+
+DELIMITER $$
+CREATE FUNCTION userFunc(VALUE1 INT, VALUE2 INT)
+	RETURNS INT
+BEGIN 
+	RETURN VALUE1 + VALUE2;
+END $$
+DELIMITER ;
+
+SELECT userFunc(10, 20) AS 합계;
+
+#출생년도를 입력하면 나이가 출력되는 함수 만들기
+#함수명 : getAgeFunc(int)
+
+DELIMITER $$
+CREATE FUNCTION getAgeFunc(bYear INT)
+	RETURNS INT
+BEGIN
+	DECLARE age INT; #선언
+	SET age = YEAR(CURDATE()) - bYear; #age 값 입력
+	RETURN age;
+END $$
+DELIMITER ;
+
+SELECT getAgeFunc(2003) AS 나이;
+
+
+#프로시저
+#쿼리문의 집합.. 일괄처리용
+
+DELIMITER $$
+CREATE PROCEDURE userProc()
+BEGIN 
+	SELECT * FROM student;
+END $$
+DELIMITER ;
+
+CALL userProc();
+
+#매개변수가 있는 프로시저
+DELIMITER $$
+CREATE PROCEDURE stuProc1(IN stuName VARCHAR(20))
+BEGIN 
+	SELECT * FROM student WHERE stu_name=stuName;
+END $$
+DELIMITER ;
+
+CALL stuProc1('유가인');
+
+
+DELIMITER $$
+CREATE PROCEDURE userProc2(IN height INT, IN weight INT)
+BEGIN
+	SELECT * FROM student WHERE stu_height>height AND stu_weight < weight;	
+END $$
+DELIMITER ;
+
+CALL userProc2(170, 100);
 
 
 
 
 
+CREATE TABLE if not exists testTBL(
+	id INT AUTO_INCREMENT PRIMARY KEY,
+	txt CHAR(10)
+);
 
+DELIMITER %%
+#IN 입력매개변수 OUT 출력매개변수
+CREATE PROCEDURE userProc3(IN txtValue CHAR(10), OUT outValue INT)
+BEGIN
+	INSERT INTO testTBL VALUES(NULL, txtValue);
+	SELECT MAX(id) INTO outValue FROM testTBL;
+END%%
+DELIMITER ;
+
+CALL userProc3('테스트값', @myValue);
+SELECT CONCAT('현재 입력된 id값 ==>', @myValue);
+
+
+DROP TABLE testtbl;
+DROP PROCEDURE userProc3;
+
+#if~,  else
+DELIMITER $$
+CREATE PROCEDURE ifelseProc(IN userName VARCHAR(20))
+BEGIN 
+	DECLARE height INT; #변수선언
+	SELECT stu_height INTO height FROM student WHERE stu_name=userName;
+	
+	if(height >= 170) then 
+		SELECT '키가 크군요';
+	else
+		SELECT '키가 크진 않군요';
+	END if;
+END $$
+DELIMITER ;
+
+DROP PROCEDURE ifelseProc;
+
+CALL ifelseProc('옥성우');
