@@ -432,8 +432,6 @@ CALL userProc2(170, 100);
 
 
 
-
-
 CREATE TABLE if not exists testTBL(
 	id INT AUTO_INCREMENT PRIMARY KEY,
 	txt CHAR(10)
@@ -473,3 +471,179 @@ DELIMITER ;
 DROP PROCEDURE ifelseProc;
 
 CALL ifelseProc('옥성우');
+
+#트리거
+#연달아 사용할때 사용한다.
+CREATE TABLE if not exists testTBL(
+	id INT ,
+	txt CHAR(10)
+);
+
+DROP TABLE testtbl;
+
+INSERT INTO testtbl VALUES (1, 'aaaa'), (2, 'bbbb'), (3, 'cccc');
+
+SELECT * FROM testtbl;
+
+DELIMITER //
+CREATE  TRIGGER testTrg
+	AFTER DELETE #삭제된 후에
+	ON testtbl #testtbl테이블에서
+	FOR EACH ROW #각행마다 실행시켜라
+BEGIN
+	SET @msg= '삭제가 되었어요..'; #트리거 실행 시 작동되는 코드
+END //
+DELIMITER ;
+
+SET @msg='';
+INSERT INTO testtbl VALUES(4, 'dddd');
+SELECT @msg;
+
+UPDATE testtbl SET txt='xxxx' WHERE id=4;
+SELECT @msg;
+
+DELETE FROM testtbl WHERE  id=4;
+SELECT * FROM testtbl;
+SELECT @msg; #트리거에서 지정한 메시지인 삭제가 되었다는 메시지가 뜸
+
+
+#회원테이블에 update나 delete를 시도하면, 수정/삭제된 데이터를 별도의 테이블에 보관하고 변경된 일자와 변경한 사람을 기록하자.
+
+DROP TABLE usertbl;
+
+CREATE  TABLE usertbl(
+	userID CHAR(8) PRIMARY KEY,
+	NAME VARCHAR(10) NOT NULL,
+	birthYear INT NOT NULL,
+	addr CHAR(2) NOT NULL,
+	mobile1 CHAR(3),
+	mobile2 CHAR(8),
+	height SMALLINT,
+	mDate DATE
+);
+
+INSERT INTO usertbl VALUES ('HGD', '홍길동', 1980, '서울', '010', '11112222', 173, '2023-01-23');
+SELECT*FROM usertbl;
+
+CREATE  TABLE backupUsertbl(
+	userID CHAR(8) , 
+	NAME VARCHAR(10) NOT NULL,
+	birthYear INT NOT NULL,
+	addr CHAR(2) NOT NULL,
+	mobile1 CHAR(3),
+	mobile2 CHAR(8),
+	height SMALLINT,
+	mDate DATE,
+	modType CHAR(2), #변경된 타입(수정 또는 삭제)
+	modDate DATE, #변경된 날짜
+	modUser VARCHAR(256) #변경된 사용자
+);
+
+DROP TABLE backupUsertbl;
+DROP TRIGGER backUserTbl_UpdateTrag;
+
+DELIMITER $$
+CREATE TRIGGER backUserTbl_UpdateTrag
+	AFTER UPDATE ON usertbl FOR EACH ROW
+BEGIN
+	INSERT INTO backUpusertbl VALUES(OLD.userID, OLD.name, OLD.birthYear, OLD.addr, OLD.mobile1,
+	OLD.mobile2, OLD.height, OLD.mDate, '수정', CURDATE(), CURRENT_USER());
+END $$
+DELIMITER ;
+
+UPDATE usertbl SET height = 198 WHERE userID='HGD';
+SELECT*FROM usertbl;
+SELECT*FROM backupUserTbl;
+
+UPDATE usertbl SET addr = '부산' WHERE userID='HGD';
+SELECT*FROM usertbl;
+SELECT*FROM backupUserTbl;
+
+DELIMITER $$
+CREATE TRIGGER backUpUserTbl_DeleteTrag
+	AFTER DELETE ON usertbl FOR EACH ROW 
+BEGIN
+	INSERT INTO backUpusertbl VALUES(OLD.userID, OLD.name, OLD.birthYear, OLD.addr, OLD.mobile1,
+	OLD.mobile2, OLD.height, OLD.mDate, '삭제', CURDATE(), CURRENT_USER());
+END $$
+delimiter ;
+
+DELETE FROM usertbl WHERE userID='HGD';
+SELECT*FROM usertbl;
+SELECT*FROM backupUserTbl;
+
+#데이터가 테이블에 입력될 때 출생년도를 검사해서 데이터에 문제가 있
+#값을 변경해서 입력시키는 Before Insert 트리거를 작성해보자.
+#출생년도는 1900년 이상이어야 한다.
+#출생년도가 현재 년도 보다 크면 현재 년도로 변경한다.
+
+DROP TRIGGER birthChecktrg;
+
+DELIMITER %%
+CREATE TRIGGER birthChecktrg
+	BEFORE INSERT ON usertbl FOR EACH row
+BEGIN #데이터가 입력될 때 임시테이블이 있음 new, old
+	if NEW.birthyear < 1900 then
+		SET NEW.birthYear=0;
+	ELSEIF NEW.birthyear > YEAR(CURDATE()) then
+		SET NEW.birthYear=YEAR(CURDATE());
+	END if;
+	#Update usertbl set birYear=0 where birthYear<1900;
+END %%
+DELIMITER ;
+
+/*
+DELIMITER %%
+CREATE TRIGGER birthChecktrg2
+	BEFORE INSERT ON usertbl FOR EACH row
+BEGIN #데이터가 입력될 때 임시테이블이 있음 new, old
+	Update usertbl set birYear=0 where birthYear<1900;
+END %%
+DELIMITER ;
+*/
+
+DROP TRIGGER birthChecktrg2;
+
+INSERT INTO usertbl VALUES ('Hdd3', '고길동', 1800, '서울', '010', '11112222', 173, '2023-01-23');
+SELECT*FROM usertbl;
+UPDATE usertbl SET birthYear =1800 WHERE userID='Hdddddd';
+SELECT*FROM usertbl;
+SELECT*FROM backupUserTbl;
+
+
+
+#commit 영구적으로 데이터베이스에 저장한다.
+#rollback 데이터베이스가 저장되기전으로 돌아간다.
+#savepoint 변수 롤백할 수 있는 지점을 정할 수 있다
+#transaction (트랜잭션)
+START TRANSACTION;
+INSERT INTO usertbl VALUES('xxx', 'xxx', 1998, '경기', '010', '66667777', 156, '2022-08-20');
+
+SAVEPOINT a;
+
+INSERT INTO usertbl VALUES('zzz', 'zzz', 1998, '경기', '010', '66667777', 156, '2022-08-20');
+
+SAVEPOINT b;
+
+DELETE FROM usertbl WHERE userID='Hdd';
+
+SELECT*FROM usertbl;
+
+ROLLBACK TO a;
+
+ROLLBACK TO b; #세이브포인트 a지점까지올라가서 b지점은 없어진다.
+
+SELECT*FROM usertbl;
+
+COMMIT;
+
+
+
+
+
+
+
+
+
+
+
