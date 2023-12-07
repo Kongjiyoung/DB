@@ -637,12 +637,54 @@ SELECT*FROM usertbl;
 
 COMMIT;
 
+TRUNCATE TABLE usertbl; #데이터베이스 구조는 남기고 데이터만 삭제
+SELECT*FROM backupUserTbl; 
 
 
 
 
 
+CREATE TABLE employee11(
+	eno INT AUTO_INCREMENT PRIMARY KEY,
+	ename VARCHAR(20) NOT NULL,
+	deptCode CHAR(2) NOT NULL,
+	grade CHAR(2) NOT NULL CHECK(grade IN ('인턴', '사원', '대리', '과장', '부장', '이사', '사장')),
+	FOREIGN KEY(deptCode) REFERENCES dept(deptCode)
+);
 
+CREATE TABLE dept(
+	deptCode CHAR(2) PRIMARY KEY ,
+	deptName VARCHAR(10) NOT NULL,
+	dArea VARCHAR(10) NOT NULL DEFAULT '부산'
+);
+
+
+DROP TABLE employee11;
+DROP TABLE dept;
+
+INSERT INTO dept(deptCode, deptName) VALUES('AA', '인사');
+INSERT INTO dept(deptCode, deptName) VALUES('BB', '개발');
+INSERT INTO dept VALUES('CC', '영업', '서울');
+INSERT INTO employee11 VALUES(null,'김웍','AA','사원');
+INSERT INTO employee11 VALUES(null,'김난','BB','사원');
+INSERT INTO employee11 VALUES(null,'김석','CC','사원');
+INSERT INTO employee11 VALUES(null,'김석','CC','사원');
+INSERT INTO employee11 VALUES(null,'김석','CC','사원');
+SELECT*FROM employee11;
+SELECT*FROM dept;
+
+#1.직급이 '사원'인 사람의 사번과 이름을 조회하시오.
+SELECT eno, ename FROM employee11 WHERE grade='사원';
+#2.성이 '김'씨인 직원의 이름, 부서코드를 조회하시오.
+SELECT ename, deptCode FROM employee11 WHERE ename LIKE '김%';
+#3.부서별 직원수를 조회하시오.
+SELECT  deptCode, COUNT(deptCode) FROM employee11 GROUP BY deptCode;
+#4. 조회결과로 사번, 이름, 부서코드, 부서명이 나오도록 쿼리를 작성하시오.
+SELECT e.eno, e.ename, d.deptcode, d.deptname FROM employee11 e, dept d WHERE e.deptCode=d.deptCode;
+#5. 사번이 3번인 사원의 직급을 한단계 승진시키시오.
+UPDATE employee11 SET grade='대리' WHERE eno=3;
+#6. 사번이 5번인 사원을 삭제하시오
+DELETE from employee11 WHERE eno=5;
 
 
 
